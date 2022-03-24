@@ -286,8 +286,14 @@ def orthonormalization_gram_schmidt(basis):
     return orthonormalization
 
 def main():
-    basis = Vector(Vector(-6, 8, 0), Vector(1, 5, 0), Vector(0, 0, 2))
-    print(orthonormalization_gram_schmidt(basis))
+    A = Matrix([
+        [1, 0, 1],
+        [1, -1, 0],
+        [1, 2, 1]
+    ])
+    b = Matrix([-2, 1, 0]).transpose()
+    print(cramers(A, b))
+
 
 
 if __name__ == '__main__':
