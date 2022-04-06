@@ -71,6 +71,7 @@ class Vector:
         return Vector.INNER_PRODUCT(self, other)
 
     def project(self, other):
+        # proj of other onto self
         return self * (self.inner_product(other) / self.inner_product(self))
 
 
@@ -242,6 +243,10 @@ class Matrix:
                     if matrix[j + 1, i + 1] != 0:
                         matrix[i + 1, 0], matrix[j + 1, 0] = matrix[j + 1, 0], matrix[i + 1, 0]
                         break
+
+            if matrix[i + 1, i + 1] == 0:
+                continue
+
             matrix.factors *= matrix[i + 1, i + 1]
             matrix[i + 1, 0] /= matrix[i + 1, i + 1]
             for j in range(i + 1, matrix.rows):
@@ -255,6 +260,24 @@ class Matrix:
                 return
             for j in range(0, i):
                 matrix[j + 1, 0] -= matrix[i + 1, 0] * matrix[j + 1, i + 1]
+
+        # Moving the zero rows to the bottom
+        is_zero = []
+        for i in range(0, matrix.rows):
+            zero = True
+            for j in matrix[i + 1, 0]:
+                if j != 0:
+                    zero = False
+            is_zero.append(zero)
+
+        for i in range(len(is_zero)):
+            if is_zero[i]:
+                for j in range(i, len(is_zero)):
+                    if not is_zero[j]:
+                        matrix[i + 1, 0], matrix[j + 1, 0] = matrix[j + 1, 0], matrix[i + 1, 0]
+                        is_zero[i], is_zero[j] = is_zero[j], is_zero[i]
+                        break
+
         return matrix
 
     rows = property(_row_count)
@@ -278,23 +301,19 @@ def cramers(a: Matrix, b: Matrix):
 def orthonormalization_gram_schmidt(basis):
     orthonormalization = Vector()
     for i in range(len(basis)):
-        vector = basis[i]
-        for j in range(i - 1, 0, -1):
-            vector -= basis[j].project(basis[i])
+        vector = basis[i + 1]
+        for j in range(i - 1, -1, -1):
+            vector -= orthonormalization[j + 1].project(basis[i + 1])
 
-        orthonormalization.append(vector.normalized())
+        orthonormalization.append(vector)
+
+    orthonormalization = Vector(*[vector.normalized() for vector in orthonormalization])
     return orthonormalization
 
 def main():
-    A = Matrix([
-        [1, 0, 1],
-        [1, -1, 0],
-        [1, 2, 1]
-    ])
-    b = Matrix([-2, 1, 0]).transpose()
-    print(cramers(A, b))
-
-
+    vector = Vector(4, -2, -3)
+    image = Vector(4 * vector[2] - vector[1], 4 * vector[1] + 5 * vector[2])
+    print(f"{vector} -> {image}")
 
 if __name__ == '__main__':
     main()
