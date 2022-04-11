@@ -1,7 +1,10 @@
+import fractions
 import math
+import warnings
+from pprint import pprint as pp
 
 
-PARAMETERS = "stuvwxyzabcdefghijklmnopqr"
+PARAMETERS = "stuvwabcdefghijklmnopqr"
 
 def dot(u, v):
     assert len(u) == len(v)
@@ -62,6 +65,14 @@ class Vector:
     def __str__(self):
         return "<" + ", ".join([str(e) for e in self]) + ">"
 
+    # COMPARISON FUNCTIONS
+    def __eq__(self, other):
+        assert isinstance(other, float) or isinstance(other, int) or isinstance(other, Vector)
+        if isinstance(other, float) or isinstance(other, int):
+            return all([other == element for element in self])
+        else:
+            return all([x == y for x, y in zip(self, other)])
+
     def append(self, element):
         self._list.append(element)
 
@@ -86,6 +97,7 @@ class Vector:
 class Matrix:
     def __init__(self, matrix):
         self._list = []
+
         if len(matrix) == 0:
             return
         if isinstance(matrix[0], list) or isinstance(matrix[0], tuple) or isinstance(matrix[0], Vector):
@@ -97,12 +109,19 @@ class Matrix:
         else:
             self._list.append([element for element in matrix])
 
+        if not all([len(self._list[0]) == len(row) for row in self._list]):
+            print("The instantiated matrix has unequal row lengths.")
+
         self.factors = 1
 
     def __str__(self):
         max_length, elements = 0, []
         for row in self:
             for element in row:
+                if isinstance(element, float):  # This replaces floats with fractions
+                    if round(element) != element:
+                        element = fractions.Fraction(element).limit_denominator(1000)
+
                 elements.append(element)
                 if (l := len(str(element))) > max_length:
                     max_length = l
@@ -261,6 +280,22 @@ class Matrix:
                 matrix[j + 1, 0] -= matrix[i + 1, 0] * matrix[j + 1, i + 1]
         return matrix
 
+    def lower(self):
+        matrix = Matrix(self)
+        for i in range(matrix.rows):
+            if i >= matrix.columns:
+                return matrix
+
+            if matrix[i + 1, i + 1] == 0:  # Runs this if there is a 0 where a number is needed
+                for j in range(i + 1, matrix.rows):
+                    if matrix[j + 1, i + 1] != 0:
+                        matrix[i + 1, 0], matrix[j + 1, 0] = matrix[j + 1, 0], matrix[i + 1, 0]
+                        break
+            matrix.factors *= matrix[i + 1, i + 1]
+            matrix[i + 1, 0] /= matrix[i + 1, i + 1]
+            for j in range(i + 1, matrix.rows):
+                matrix[j + 1, 0] -= matrix[i + 1, 0] * matrix[j + 1, i + 1]
+
     def rref(self):
         matrix = self.ref()
         for i in range(1, matrix.rows):
@@ -287,6 +322,9 @@ class Matrix:
                         break
 
         return matrix
+
+    def rank(self):
+        return self.rows - sum([0 == row for row in self.rref()])
 
     rows = property(_row_count)
     columns = property(_column_count)
@@ -318,49 +356,48 @@ def orthonormalization_gram_schmidt(basis):
     orthonormalization = Vector(*[vector.normalized() for vector in orthonormalization])
     return orthonormalization
 
+def parameterize(matrix: Matrix):
+    variables = []
+    variable_count = matrix.columns - sum([row == 0 for row in matrix])
+    for i in range(matrix.rows):
+        if i < variable_count:
+            variables.append(f"x{i + 1}")
+        else:
+            variables.append(PARAMETERS[i - variable_count])
+
+    for i in range(matrix.rows):
+        row = matrix[i + 1, 0]
+        if row == 0:
+            continue
+
+        for j in range(len(row)):
+            if row[j + 1]:
+
+                break
+
+    print(variables)
+
 def main():
 
     matrix = Matrix([
         [1, 2, 3, 4],
-        [2, 1, 4, 6],
-        [2, 1, 4, 4],
+        [1, 2, 3, 4],
+        [1, 2, 3, 4],
         [1, 2, 3, 4]
+    ])
+
+    matrix = Matrix([
+        [6, -3, 2, 14, 1, 0, 5],
+        [1, 4, 0, 11, 0, 18, 5],
+        [6, -3, 2, 14, 1, 0, 5],
+        [2, -4, 1, -1, 0, -13, -2],
+        [0, 8, -1, 15, 1, 35, 10]
     ])
 
     rref = matrix.rref()
     print(rref)
 
-    variables = []
-    variable_count = 0
-    for i in range(min(rref.rows, rref.columns)):
-        column = rref[0, i + 1]
-        count = 0
-        for pos in column:
-            count += bool(pos)
 
-        if count > 1:
-            variables.append(PARAMETERS[variable_count])
-            variable_count += 1
-        else:
-            variables.append(f"x{i + 1}")
-
-    basis = []
-    for i in range(min(rref.rows, rref.columns)):
-        row = rref[i + 1, 0]
-        if not row[i + 1]:
-            continue
-
-        variable_name = f"x{i + 1}"
-
-        if variable_name in variables:
-            eq = f"{variable_name} ="
-            for j in range(len(variables)):
-                if variables[j] in PARAMETERS:
-                    eq += f" {-row[j + 1]}{variables[j]}"
-            basis.append(eq)
-
-    print(variables)
-    print(basis)
 
 
 if __name__ == '__main__':
