@@ -1,12 +1,20 @@
 import math
 
 
+PARAMETERS = "stuvwxyzabcdefghijklmnopqr"
+
 def dot(u, v):
     assert len(u) == len(v)
     _sum = 0
     for x, y in zip(u, v):
         _sum += x * y
     return _sum
+
+class Equation:
+    def __init__(self, coefficient=1, variable="x"):
+        self.coefficient = coefficient
+        self.variable = variable
+
 
 class Vector:
 
@@ -311,9 +319,49 @@ def orthonormalization_gram_schmidt(basis):
     return orthonormalization
 
 def main():
-    vector = Vector(4, -2, -3)
-    image = Vector(4 * vector[2] - vector[1], 4 * vector[1] + 5 * vector[2])
-    print(f"{vector} -> {image}")
+
+    matrix = Matrix([
+        [1, 2, 3, 4],
+        [2, 1, 4, 6],
+        [2, 1, 4, 4],
+        [1, 2, 3, 4]
+    ])
+
+    rref = matrix.rref()
+    print(rref)
+
+    variables = []
+    variable_count = 0
+    for i in range(min(rref.rows, rref.columns)):
+        column = rref[0, i + 1]
+        count = 0
+        for pos in column:
+            count += bool(pos)
+
+        if count > 1:
+            variables.append(PARAMETERS[variable_count])
+            variable_count += 1
+        else:
+            variables.append(f"x{i + 1}")
+
+    basis = []
+    for i in range(min(rref.rows, rref.columns)):
+        row = rref[i + 1, 0]
+        if not row[i + 1]:
+            continue
+
+        variable_name = f"x{i + 1}"
+
+        if variable_name in variables:
+            eq = f"{variable_name} ="
+            for j in range(len(variables)):
+                if variables[j] in PARAMETERS:
+                    eq += f" {-row[j + 1]}{variables[j]}"
+            basis.append(eq)
+
+    print(variables)
+    print(basis)
+
 
 if __name__ == '__main__':
     main()
